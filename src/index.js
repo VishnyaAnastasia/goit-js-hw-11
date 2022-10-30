@@ -23,6 +23,10 @@ Notify.init({
     background: '#80f6a0',
     textColor: '#ffffff',
   },
+  warning: {
+    background: '#dbf454',
+    textColor: '#ffffff',
+  },
 });
 
 var lightbox = new SimpleLightbox('.gallery a', {});
@@ -33,6 +37,7 @@ const galleryImg = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 
 let page;
+let totalPages;
 let query;
 
 loadMoreBtn.style.visibility = 'hidden';
@@ -42,15 +47,21 @@ searchForm.addEventListener('submit', onSubmit);
 async function onSubmit(event) {
   event.preventDefault();
 
+  page = 1;
+  query = searchInput.value;
+
+  if (query.trim() === '') {
+    Notify.warning('Oppps.. please type query');
+    return;
+  }
+
   loadMoreBtn.style.visibility = 'hidden';
 
   galleryImg.innerHTML = '';
 
-  page = 1;
-
-  query = searchInput.value;
-
   let images = await fetch(query, page);
+
+  totalPages = Math.trunc(images.totalHits / 40) + 1;
 
   if (images.hits.length === 0) {
     Notify.failure('Oppps.. please try again');
@@ -60,6 +71,11 @@ async function onSubmit(event) {
   Notify.success(`Hooray! We found ${images.totalHits} images`);
 
   createGallery(images);
+
+  if (totalPages === page) {
+    return;
+  }
+
   loadMoreBtn.style.visibility = 'visible';
 }
 
@@ -70,12 +86,13 @@ async function loadMore() {
 
   let images = await fetch(query, page);
 
-  if (images.hits.length === 0) {
-    Notify.info('No more results');
+  createGallery(images);
+
+  if (page === totalPages) {
+    Notify.info('All the pictures are shown');
+    loadMoreBtn.style.visibility = 'hidden';
     return;
   }
-
-  createGallery(images);
 }
 
 function createGallery(images) {
